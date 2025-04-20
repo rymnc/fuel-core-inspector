@@ -70,9 +70,9 @@ pub struct ValidatedFuelCoreInspectorCliArgs {
     /// column
     column: crate::columns::Column,
     /// key
-    key: String,
+    key: std::sync::Arc<[u8]>,
     /// value
-    value: String,
+    value: std::sync::Arc<[u8]>,
     /// command
     cmd: CommandWithoutConfig,
 }
@@ -93,12 +93,12 @@ impl ValidatedFuelCoreInspectorCliArgs {
     }
 
     /// key
-    pub fn key(&self) -> &str {
+    pub fn key(&self) -> &[u8] {
         &self.key
     }
 
     /// value
-    pub fn value(&self) -> &str {
+    pub fn value(&self) -> &[u8] {
         &self.value
     }
 
@@ -116,6 +116,29 @@ impl ValidatedFuelCoreInspectorCliArgs {
     pub fn cmd(&self) -> &CommandWithoutConfig {
         &self.cmd
     }
+}
+
+fn hex_string_to_bytes<S>(hex_string: S) -> anyhow::Result<std::sync::Arc<[u8]>>
+where
+    S: AsRef<str>,
+{
+    let hex_string = hex_string
+        .as_ref()
+        .strip_prefix("0x")
+        .unwrap_or(hex_string.as_ref());
+
+    if hex_string.len() % 2 != 0 {
+        anyhow::bail!("Hex string must have an even length");
+    }
+
+    let mut bytes = Vec::with_capacity(hex_string.len() / 2);
+
+    let mut chars = hex_string.chars();
+    while let (Some(a), Some(b)) = (chars.next(), chars.next()) {
+        let byte = u8::from_str_radix(&format!("{}{}", a, b), 16)?;
+        bytes.push(byte);
+    }
+    Ok(std::sync::Arc::from(bytes))
 }
 
 impl FuelCoreInspectorCliArgs {
@@ -136,6 +159,9 @@ impl FuelCoreInspectorCliArgs {
         if matches!(cmd, CommandWithoutConfig::Mutate) && value.is_none() {
             return Err(anyhow::anyhow!("Value is required for mutate command"));
         }
+
+        let key = hex_string_to_bytes(&key)?;
+        let value = value.map(hex_string_to_bytes).transpose()?;
 
         let column = database.parse_column_for_database(column.as_str())?;
 
