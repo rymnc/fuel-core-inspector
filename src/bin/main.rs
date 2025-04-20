@@ -22,14 +22,13 @@ fn hex_string_to_bytes(hex_string: &str) -> anyhow::Result<Vec<u8>> {
         let byte = u8::from_str_radix(&format!("{}{}", a, b), 16)?;
         bytes.push(byte);
     }
-
     Ok(bytes)
 }
 
 fn main() -> anyhow::Result<()> {
     let validated_args = FuelCoreInspectorCliArgs::parse().validate()?;
 
-    let database_handle = DatabaseHandle::from(&validated_args);
+    let mut database_handle = DatabaseHandle::try_from(&validated_args)?;
 
     match validated_args.cmd() {
         CommandWithoutConfig::Inspect => {
@@ -47,6 +46,8 @@ fn main() -> anyhow::Result<()> {
             )?;
         }
     }
+
+    database_handle.shutdown();
 
     Ok(())
 }

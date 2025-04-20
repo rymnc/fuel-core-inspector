@@ -61,8 +61,10 @@ impl ParseColumnForDatabase for databases::Database {
     }
 }
 
-impl From<&ValidatedFuelCoreInspectorCliArgs> for DatabaseHandle {
-    fn from(value: &ValidatedFuelCoreInspectorCliArgs) -> Self {
-        DatabaseHandle::new(value.database().clone(), value.database_config().clone())
+impl TryFrom<&ValidatedFuelCoreInspectorCliArgs> for DatabaseHandle {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &ValidatedFuelCoreInspectorCliArgs) -> Result<Self, Self::Error> {
+        DatabaseHandle::try_new(value.database().clone(), value.database_config().clone())
     }
 }

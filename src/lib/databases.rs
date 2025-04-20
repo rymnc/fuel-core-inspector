@@ -23,10 +23,6 @@ use fuel_core_storage::{
 
 use crate::columns::Column;
 
-// defined as static var so it can be reused when we have repl mode
-static DB: std::sync::OnceLock<anyhow::Result<CombinedDatabase>> =
-    std::sync::OnceLock::new();
-
 /// Database variants
 #[derive(
     Debug,
@@ -67,12 +63,19 @@ pub struct DatabaseHandle {
     variant: Database,
     /// Database configuration
     config: DatabaseConfig,
+    /// database
+    database: CombinedDatabase,
 }
 
 impl DatabaseHandle {
     /// Create a new database handle
-    pub fn new(variant: Database, config: DatabaseConfig) -> Self {
-        Self { variant, config }
+    pub fn try_new(variant: Database, config: DatabaseConfig) -> anyhow::Result<Self> {
+        let database = Self::db(&variant, &config)?;
+        Ok(Self {
+            variant,
+            config,
+            database,
+        })
     }
 
     /// Get the database variant
@@ -85,104 +88,102 @@ impl DatabaseHandle {
         &self.config
     }
 
-    fn db(&self) -> anyhow::Result<&'static CombinedDatabase> {
-        let res = DB.get_or_init(|| {
-            let path = PathBuf::from_str(&self.config.path)?;
-            // TODO: make configurable
-            let state_rewind_policy = StateRewindPolicy::NoRewind;
-            let db_config = fuel_core::state::rocks_db::DatabaseConfig {
-                cache_capacity: None,
-                max_fds: -1,
-                columns_policy: ColumnsPolicy::Lazy,
-            };
+    fn db(
+        variant: &Database,
+        config: &DatabaseConfig,
+    ) -> anyhow::Result<CombinedDatabase> {
+        let path = PathBuf::from_str(&config.path)?;
+        // TODO: make configurable
+        let state_rewind_policy = StateRewindPolicy::NoRewind;
+        let db_config = fuel_core::state::rocks_db::DatabaseConfig {
+            cache_capacity: None,
+            max_fds: -1,
+            columns_policy: ColumnsPolicy::Lazy,
+        };
 
-            // only open the variant's database, rest are in memory
-            // TODO: in repl mode, maybe we want to open all databases, using CombinedDatabase::open
-            match self.variant() {
-                Database::OnChain => {
-                    let db = fuel_core::database::Database::open_rocksdb(
-                        &path,
-                        state_rewind_policy,
-                        db_config,
-                    )?;
+        // only open the variant's database, rest are in memory
+        // TODO: in repl mode, maybe we want to open all databases, using CombinedDatabase::open
+        let res = match variant {
+            Database::OnChain => {
+                let db = fuel_core::database::Database::open_rocksdb(
+                    &path,
+                    state_rewind_policy,
+                    db_config,
+                )?;
 
-                    let combined_database = CombinedDatabase::new(
-                        db,
-                        Default::default(),
-                        Default::default(),
-                        Default::default(),
-                        Default::default(),
-                    );
-                    Ok(combined_database)
-                }
-                Database::OffChain => {
-                    let db = fuel_core::database::Database::open_rocksdb(
-                        &path,
-                        state_rewind_policy,
-                        db_config,
-                    )?;
-
-                    let combined_database = CombinedDatabase::new(
-                        Default::default(),
-                        db,
-                        Default::default(),
-                        Default::default(),
-                        Default::default(),
-                    );
-                    Ok(combined_database)
-                }
-                Database::Relayer => {
-                    let db = fuel_core::database::Database::open_rocksdb(
-                        &path,
-                        state_rewind_policy,
-                        db_config,
-                    )?;
-                    let combined_database = CombinedDatabase::new(
-                        Default::default(),
-                        Default::default(),
-                        db,
-                        Default::default(),
-                        Default::default(),
-                    );
-                    Ok(combined_database)
-                }
-                Database::GasPrice => {
-                    let db = fuel_core::database::Database::open_rocksdb(
-                        &path,
-                        state_rewind_policy,
-                        db_config,
-                    )?;
-                    let combined_database = CombinedDatabase::new(
-                        Default::default(),
-                        Default::default(),
-                        Default::default(),
-                        db,
-                        Default::default(),
-                    );
-                    Ok(combined_database)
-                }
-                Database::Compression => {
-                    let db = fuel_core::database::Database::open_rocksdb(
-                        &path,
-                        state_rewind_policy,
-                        db_config,
-                    )?;
-                    let combined_database = CombinedDatabase::new(
-                        Default::default(),
-                        Default::default(),
-                        Default::default(),
-                        Default::default(),
-                        db,
-                    );
-                    Ok(combined_database)
-                }
+                let combined_database = CombinedDatabase::new(
+                    db,
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                );
+                combined_database
             }
-        });
+            Database::OffChain => {
+                let db = fuel_core::database::Database::open_rocksdb(
+                    &path,
+                    state_rewind_policy,
+                    db_config,
+                )?;
 
-        match res {
-            Ok(db) => Ok(db),
-            Err(err) => anyhow::bail!(err.to_string()),
-        }
+                let combined_database = CombinedDatabase::new(
+                    Default::default(),
+                    db,
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                );
+                combined_database
+            }
+            Database::Relayer => {
+                let db = fuel_core::database::Database::open_rocksdb(
+                    &path,
+                    state_rewind_policy,
+                    db_config,
+                )?;
+                let combined_database = CombinedDatabase::new(
+                    Default::default(),
+                    Default::default(),
+                    db,
+                    Default::default(),
+                    Default::default(),
+                );
+                combined_database
+            }
+            Database::GasPrice => {
+                let db = fuel_core::database::Database::open_rocksdb(
+                    &path,
+                    state_rewind_policy,
+                    db_config,
+                )?;
+                let combined_database = CombinedDatabase::new(
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    db,
+                    Default::default(),
+                );
+                combined_database
+            }
+            Database::Compression => {
+                let db = fuel_core::database::Database::open_rocksdb(
+                    &path,
+                    state_rewind_policy,
+                    db_config,
+                )?;
+                let combined_database = CombinedDatabase::new(
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    Default::default(),
+                    db,
+                );
+                combined_database
+            }
+        };
+
+        Ok(res)
     }
 
     /// Perform a read operation on the database
@@ -192,10 +193,8 @@ impl DatabaseHandle {
         key: &[u8],
     ) -> anyhow::Result<Option<Value>> {
         // Implementation of read operation
-        let db = self.db()?;
-
         let maybe_value = match self.variant() {
-            Database::OnChain => db.on_chain().get(
+            Database::OnChain => self.database.on_chain().get(
                 key,
                 column
                     .as_onchain()
@@ -203,7 +202,7 @@ impl DatabaseHandle {
                     .clone()
                     .into(),
             )?,
-            Database::OffChain => db.off_chain().get(
+            Database::OffChain => self.database.off_chain().get(
                 key,
                 column
                     .as_offchain()
@@ -211,7 +210,7 @@ impl DatabaseHandle {
                     .clone()
                     .into(),
             )?,
-            Database::Compression => db.compression().get(
+            Database::Compression => self.database.compression().get(
                 key,
                 column
                     .as_compression()
@@ -219,7 +218,7 @@ impl DatabaseHandle {
                     .clone()
                     .into(),
             )?,
-            Database::GasPrice => db.gas_price().get(
+            Database::GasPrice => self.database.gas_price().get(
                 key,
                 column
                     .as_gas_price()
@@ -227,7 +226,7 @@ impl DatabaseHandle {
                     .clone()
                     .into(),
             )?,
-            Database::Relayer => db.relayer().get(
+            Database::Relayer => self.database.relayer().get(
                 key,
                 column
                     .as_relayer()
@@ -242,17 +241,15 @@ impl DatabaseHandle {
 
     /// Perform a write operation on the database
     pub fn perform_write(
-        &self,
+        &mut self,
         column: &Column,
         key: &[u8],
         value: &[u8],
     ) -> anyhow::Result<()> {
         // Implementation of write operation
-        let mut db = self.db()?.clone();
-
         match self.variant() {
             Database::OnChain => {
-                let mut tx = db.on_chain_mut().write_transaction();
+                let mut tx = self.database.on_chain_mut().write_transaction();
                 tx.write(
                     key,
                     column
@@ -265,7 +262,7 @@ impl DatabaseHandle {
                 tx.commit()?;
             }
             Database::OffChain => {
-                let mut tx = db.off_chain_mut().write_transaction();
+                let mut tx = self.database.off_chain_mut().write_transaction();
                 tx.write(
                     key,
                     column
@@ -281,7 +278,7 @@ impl DatabaseHandle {
                 panic!("Compression database is not supported for write operations");
             }
             Database::GasPrice => {
-                let mut tx = db.gas_price_mut().write_transaction();
+                let mut tx = self.database.gas_price_mut().write_transaction();
                 tx.write(
                     key,
                     column
@@ -294,7 +291,7 @@ impl DatabaseHandle {
                 tx.commit()?;
             }
             Database::Relayer => {
-                let mut tx = db.relayer_mut().write_transaction();
+                let mut tx = self.database.relayer_mut().write_transaction();
                 tx.write(
                     key,
                     column
@@ -309,5 +306,10 @@ impl DatabaseHandle {
         }
 
         Ok(())
+    }
+
+    /// shutdown rocksdb
+    pub fn shutdown(self) {
+        self.database.shutdown();
     }
 }
