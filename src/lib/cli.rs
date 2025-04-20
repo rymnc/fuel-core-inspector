@@ -54,8 +54,7 @@ enum Command {
 impl Command {
     fn into_cmd_config(self) -> CmdConfig {
         match self {
-            Command::Inspect(config) => config,
-            Command::Mutate(config) => config,
+            Self::Mutate(config) | Self::Inspect(config) => config,
         }
     }
 }
@@ -125,7 +124,7 @@ where
     let hex_string = hex_string
         .as_ref()
         .strip_prefix("0x")
-        .unwrap_or(hex_string.as_ref());
+        .unwrap_or_else(|| hex_string.as_ref());
 
     if hex_string.len() % 2 != 0 {
         anyhow::bail!("Hex string must have an even length");
@@ -135,7 +134,7 @@ where
 
     let mut chars = hex_string.chars();
     while let (Some(a), Some(b)) = (chars.next(), chars.next()) {
-        let byte = u8::from_str_radix(&format!("{}{}", a, b), 16)?;
+        let byte = u8::from_str_radix(&format!("{a}{b}"), 16)?;
         bytes.push(byte);
     }
     Ok(std::sync::Arc::from(bytes))

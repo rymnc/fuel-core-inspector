@@ -70,7 +70,7 @@ pub struct DatabaseHandle {
 impl DatabaseHandle {
     /// Create a new database handle
     pub fn try_new(variant: Database, config: DatabaseConfig) -> anyhow::Result<Self> {
-        let database = Self::db(&variant, &config)?;
+        let database = Self::db(variant, &config)?;
         Ok(Self {
             variant,
             config,
@@ -79,17 +79,17 @@ impl DatabaseHandle {
     }
 
     /// Get the database variant
-    pub fn variant(&self) -> Database {
+    pub const fn variant(&self) -> Database {
         self.variant
     }
 
     /// Get the database configuration
-    pub fn config(&self) -> &DatabaseConfig {
+    pub const fn config(&self) -> &DatabaseConfig {
         &self.config
     }
 
     fn db(
-        variant: &Database,
+        variant: Database,
         config: &DatabaseConfig,
     ) -> anyhow::Result<CombinedDatabase> {
         let path = PathBuf::from_str(&config.path)?;

@@ -42,21 +42,17 @@ impl ParseColumnForDatabase for databases::Database {
         }
 
         match self {
-            databases::Database::OnChain => {
-                parse_column::<crate::columns::OnchainColumn>(c, "on-chain")
-            }
-            databases::Database::OffChain => {
+            Self::OnChain => parse_column::<crate::columns::OnchainColumn>(c, "on-chain"),
+            Self::OffChain => {
                 parse_column::<crate::columns::OffChainColumn>(c, "off-chain")
             }
-            databases::Database::Compression => {
+            Self::Compression => {
                 parse_column::<crate::columns::CompressionColumn>(c, "compression")
             }
-            databases::Database::GasPrice => {
+            Self::GasPrice => {
                 parse_column::<crate::columns::GasPriceColumn>(c, "gas-price")
             }
-            databases::Database::Relayer => {
-                parse_column::<crate::columns::RelayerColumn>(c, "relayer")
-            }
+            Self::Relayer => parse_column::<crate::columns::RelayerColumn>(c, "relayer"),
         }
     }
 }
@@ -65,6 +61,6 @@ impl TryFrom<&ValidatedFuelCoreInspectorCliArgs> for DatabaseHandle {
     type Error = anyhow::Error;
 
     fn try_from(value: &ValidatedFuelCoreInspectorCliArgs) -> Result<Self, Self::Error> {
-        DatabaseHandle::try_new(*value.database(), value.database_config().clone())
+        Self::try_new(*value.database(), value.database_config().clone())
     }
 }
