@@ -35,7 +35,7 @@ jobs:
           cross build --release --target ${{ matrix.target }}
           mkdir release
           cp target/${{ matrix.target }}/release/${{ env.CRATE }} release/
-          tar -czvf ${{ matrix.target }}-${{ env.CRATE .tar.gz release/
+          tar -czvf ${{ matrix.target }}-${{ env.CRATE }}.tar.gz release/
 
       - name: Upload archive artifact
         uses: actions/upload-artifact@v4
