@@ -65,6 +65,6 @@ impl TryFrom<&ValidatedFuelCoreInspectorCliArgs> for DatabaseHandle {
     type Error = anyhow::Error;
 
     fn try_from(value: &ValidatedFuelCoreInspectorCliArgs) -> Result<Self, Self::Error> {
-        DatabaseHandle::try_new(value.database().clone(), value.database_config().clone())
+        DatabaseHandle::try_new(*value.database(), value.database_config().clone())
     }
 }

@@ -111,14 +111,13 @@ impl DatabaseHandle {
                     db_config,
                 )?;
 
-                let combined_database = CombinedDatabase::new(
+                CombinedDatabase::new(
                     db,
                     Default::default(),
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                );
-                combined_database
+                )
             }
             Database::OffChain => {
                 let db = fuel_core::database::Database::open_rocksdb(
@@ -127,14 +126,13 @@ impl DatabaseHandle {
                     db_config,
                 )?;
 
-                let combined_database = CombinedDatabase::new(
+                CombinedDatabase::new(
                     Default::default(),
                     db,
                     Default::default(),
                     Default::default(),
                     Default::default(),
-                );
-                combined_database
+                )
             }
             Database::Relayer => {
                 let db = fuel_core::database::Database::open_rocksdb(
@@ -142,14 +140,13 @@ impl DatabaseHandle {
                     state_rewind_policy,
                     db_config,
                 )?;
-                let combined_database = CombinedDatabase::new(
+                CombinedDatabase::new(
                     Default::default(),
                     Default::default(),
                     db,
                     Default::default(),
                     Default::default(),
-                );
-                combined_database
+                )
             }
             Database::GasPrice => {
                 let db = fuel_core::database::Database::open_rocksdb(
@@ -157,14 +154,13 @@ impl DatabaseHandle {
                     state_rewind_policy,
                     db_config,
                 )?;
-                let combined_database = CombinedDatabase::new(
+                CombinedDatabase::new(
                     Default::default(),
                     Default::default(),
                     Default::default(),
                     db,
                     Default::default(),
-                );
-                combined_database
+                )
             }
             Database::Compression => {
                 let db = fuel_core::database::Database::open_rocksdb(
@@ -172,14 +168,13 @@ impl DatabaseHandle {
                     state_rewind_policy,
                     db_config,
                 )?;
-                let combined_database = CombinedDatabase::new(
+                CombinedDatabase::new(
                     Default::default(),
                     Default::default(),
                     Default::default(),
                     Default::default(),
                     db,
-                );
-                combined_database
+                )
             }
         };
 
@@ -196,43 +191,38 @@ impl DatabaseHandle {
         let maybe_value = match self.variant() {
             Database::OnChain => self.database.on_chain().get(
                 key,
-                column
+                (*column
                     .as_onchain()
-                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?
-                    .clone()
-                    .into(),
+                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?)
+                .into(),
             )?,
             Database::OffChain => self.database.off_chain().get(
                 key,
-                column
+                (*column
                     .as_offchain()
-                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?
-                    .clone()
-                    .into(),
+                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?)
+                .into(),
             )?,
             Database::Compression => self.database.compression().get(
                 key,
-                column
+                (*column
                     .as_compression()
-                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?
-                    .clone()
-                    .into(),
+                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?)
+                .into(),
             )?,
             Database::GasPrice => self.database.gas_price().get(
                 key,
-                column
+                (*column
                     .as_gas_price()
-                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?
-                    .clone()
-                    .into(),
+                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?)
+                .into(),
             )?,
             Database::Relayer => self.database.relayer().get(
                 key,
-                column
+                (*column
                     .as_relayer()
-                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?
-                    .clone()
-                    .into(),
+                    .ok_or_else(|| anyhow::anyhow!("invalid variant"))?)
+                .into(),
             )?,
         };
 
@@ -252,11 +242,10 @@ impl DatabaseHandle {
                 let mut tx = self.database.on_chain_mut().write_transaction();
                 tx.write(
                     key,
-                    column
+                    (*column
                         .as_onchain()
-                        .ok_or_else(|| anyhow::anyhow!("invalid variant"))?
-                        .clone()
-                        .into(),
+                        .ok_or_else(|| anyhow::anyhow!("invalid variant"))?)
+                    .into(),
                     value,
                 )?;
                 tx.commit()?;
@@ -265,11 +254,10 @@ impl DatabaseHandle {
                 let mut tx = self.database.off_chain_mut().write_transaction();
                 tx.write(
                     key,
-                    column
+                    (*column
                         .as_offchain()
-                        .ok_or_else(|| anyhow::anyhow!("invalid variant"))?
-                        .clone()
-                        .into(),
+                        .ok_or_else(|| anyhow::anyhow!("invalid variant"))?)
+                    .into(),
                     value,
                 )?;
                 tx.commit()?;
@@ -281,11 +269,10 @@ impl DatabaseHandle {
                 let mut tx = self.database.gas_price_mut().write_transaction();
                 tx.write(
                     key,
-                    column
+                    (*column
                         .as_gas_price()
-                        .ok_or_else(|| anyhow::anyhow!("invalid variant"))?
-                        .clone()
-                        .into(),
+                        .ok_or_else(|| anyhow::anyhow!("invalid variant"))?)
+                    .into(),
                     value,
                 )?;
                 tx.commit()?;
@@ -294,11 +281,10 @@ impl DatabaseHandle {
                 let mut tx = self.database.relayer_mut().write_transaction();
                 tx.write(
                     key,
-                    column
+                    (*column
                         .as_relayer()
-                        .ok_or_else(|| anyhow::anyhow!("invalid variant"))?
-                        .clone()
-                        .into(),
+                        .ok_or_else(|| anyhow::anyhow!("invalid variant"))?)
+                    .into(),
                     value,
                 )?;
                 tx.commit()?;
