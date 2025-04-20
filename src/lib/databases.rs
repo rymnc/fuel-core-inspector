@@ -263,7 +263,9 @@ impl DatabaseHandle {
                 tx.commit()?;
             }
             Database::Compression => {
-                panic!("Compression database is not supported for write operations");
+                anyhow::bail!(
+                    "Compression database is not supported for write operations"
+                );
             }
             Database::GasPrice => {
                 let mut tx = self.database.gas_price_mut().write_transaction();

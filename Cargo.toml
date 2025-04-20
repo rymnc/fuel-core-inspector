@@ -16,7 +16,7 @@ path = "src/lib/lib.rs"
 anyhow = { version = "1.0.98", default-features = false }
 clap = { version = "4.5.37", default-features = false, features = ["derive", "std"] }
 enum-iterator = { version = "2.1.0", default-features = false }
-fuel-core = { version = "0.43.0", default-features = false, features = ["rocksdb", "test-helpers"] }
+fuel-core = { version = "0.43.0", default-features = false, features = ["rocksdb", "test-helpers", "relayer"] }
 fuel-core-storage = { version = "0.43.0", default-features = false, features = ["std"] }
 fuel-core-compression-service = { version = "0.43.0", default-features = false }
 fuel-core-gas-price-service = { version = "0.43.0", default-features = false }

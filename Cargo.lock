@@ -2042,6 +2042,7 @@ dependencies = [
  "fuel-core-p2p",
  "fuel-core-poa",
  "fuel-core-producer",
+ "fuel-core-relayer",
  "fuel-core-services",
  "fuel-core-shared-sequencer",
  "fuel-core-storage",

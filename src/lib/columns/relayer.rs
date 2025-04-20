@@ -1,7 +1,5 @@
 //! Column definition for relayer database
 
-use fuel_core::database::database_description::relayer::DummyColumn;
-
 /// Column definition for relayer database
 #[derive(
     Debug,
@@ -30,15 +28,6 @@ impl From<RelayerColumn> for fuel_core_relayer::storage::Column {
         match value {
             RelayerColumn::Metadata => Self::Metadata,
             RelayerColumn::History => Self::History,
-        }
-    }
-}
-
-impl From<RelayerColumn> for DummyColumn {
-    fn from(value: RelayerColumn) -> Self {
-        match value {
-            RelayerColumn::Metadata => Self::Metadata,
-            _ => panic!("idk"),
         }
     }
 }
